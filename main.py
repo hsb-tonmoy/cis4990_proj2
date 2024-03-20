@@ -65,9 +65,10 @@ class VoiceAssistantApp(customtkinter.CTk):
   
   @staticmethod
   def text_to_speech(text):
-    tts = gtts.gTTS(text, lang='en')
-    tts.save("response.mp3")
-    playsound.playsound("response.mp3")
+    file_path = "response.mp3"
+    tts = gtts.gTTS(text, lang="en")
+    tts.save(file_path)
+    playsound.playsound(file_path, True)
 
   def process_voice_command(self):
       self.mic_button.configure(image=self.stop_image)
