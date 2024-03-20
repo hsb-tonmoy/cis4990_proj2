@@ -10,7 +10,7 @@ from PIL import Image
 
 load_dotenv()
 
-client = OpenAI(api_key=os.getenv('OPENAI_API__KEY'))
+client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
 
 customtkinter.set_appearance_mode("System")
 customtkinter.set_default_color_theme("dark-blue")
