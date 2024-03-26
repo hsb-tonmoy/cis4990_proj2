@@ -1,6 +1,5 @@
 <script lang="ts">
   import VoiceRecorder from "./lib/components/VoiceRecorder.svelte";
-  import mic from "./lib/assets/mic.png";
   import history from "./lib/assets/history.svg";
 </script>
 

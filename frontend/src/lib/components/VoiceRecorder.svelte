@@ -1,49 +1,54 @@
 <script lang="ts">
+  import { MediaRecorder, register } from "extendable-media-recorder";
+  import { connect } from "extendable-media-recorder-wav-encoder";
   import mic from "../assets/mic.png";
   import stop from "../assets/stop.png";
+  import { onMount } from "svelte";
 
-  let mediaRecorder: MediaRecorder | null = null;
-  let audioChunks: Blob[] = [];
+  let stream: MediaStream | null = null;
+  let media: Blob[] = [];
+  let mediaRecorder: any = null;
+  let blob: Blob | null = null;
   let isRecording = false;
 
-  function startRecording() {
-    navigator.mediaDevices
-      .getUserMedia({ audio: true })
-      .then((stream) => {
-        // console.log("Media stream obtained:", stream);
-        mediaRecorder = new MediaRecorder(stream, {
-          mimeType: "audio/ogg",
-        });
-        mediaRecorder.addEventListener("dataavailable", handleDataAvailable);
-        mediaRecorder.start();
-        isRecording = true;
-      })
-      .catch((error) => {
-        console.error("Error accessing media devices:", error);
-      });
+  onMount(async () => {
+    register(await connect());
+  });
+
+  async function startRecording() {
+    isRecording = true;
+    stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    mediaRecorder = new MediaRecorder(stream, { mimeType: "audio/wav" });
+    mediaRecorder.ondataavailable = (e: BlobEvent) => media.push(e.data);
+    mediaRecorder.onstop = function () {
+      blob = new Blob(media, { type: "audio/wav" });
+      media = [];
+      stream?.getTracks().forEach((track) => track.stop());
+    };
+    mediaRecorder.start();
   }
 
-  function stopRecording() {
+  async function stopRecording() {
     mediaRecorder?.stop();
     isRecording = false;
+    await sendAudioToAPI();
   }
 
-  function handleDataAvailable(event: BlobEvent) {
-    audioChunks.push(event.data);
-  }
-
-  function sendAudioToAPI() {
-    const audioBlob = new Blob(audioChunks, { type: "audio/ogg" });
+  async function sendAudioToAPI() {
+    const audioBlob = new Blob(blob ? [blob] : [], { type: "audio/wav" });
     const formData = new FormData();
     formData.append("audio", audioBlob);
 
     fetch("/speech-to-text", {
       method: "POST",
       body: formData,
+      headers: {
+        "cache-control": "no-cache",
+      },
     })
-      .then((response) => {
+      .then(async (response) => {
         // Handle the API response
-        const data = response.json();
+        const data = await response.json();
         console.log("API response:", data);
       })
       .catch((error) => {
@@ -54,10 +59,13 @@
   // For testing audio record, add a playback
 
   function playAudio() {
-    const audioBlob = new Blob(audioChunks, { type: "audio/webm" });
-    const audioUrl = URL.createObjectURL(audioBlob);
-    const audio = new Audio(audioUrl);
-    audio.play();
+    if (blob) {
+      const audioURL = URL.createObjectURL(blob);
+      const audio = new Audio(audioURL);
+      audio.play();
+    } else {
+      console.log("No audio recorded yet.");
+    }
   }
 </script>
 
@@ -66,7 +74,6 @@
   on:click={() => {
     if (isRecording) {
       stopRecording();
-      sendAudioToAPI();
     } else {
       startRecording();
     }

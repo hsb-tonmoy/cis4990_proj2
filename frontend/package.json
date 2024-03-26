@@ -23,6 +23,8 @@
     "vite": "^5.2.0"
   },
   "dependencies": {
+    "extendable-media-recorder": "^9.1.12",
+    "extendable-media-recorder-wav-encoder": "^7.0.107",
     "wavesurfer.js": "^7.7.5"
   }
 }
