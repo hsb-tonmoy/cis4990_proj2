@@ -13,39 +13,37 @@ app.mount("/assets", StaticFiles(directory="public/assets"), name="static")
 async def main():
     return "public/index.html"
 
-@app.post("/speech-to-text")
-async def speech_to_text(audio: UploadFile = File(...)):
-    # Load the audio file
-    audio_data = await audio.read()
-
-    # Create a BytesIO object from the audio data
+def convert_audio(audio_data):
     audio_buffer = BytesIO(audio_data)
-
     try:
-        # Convert the audio data to WAV format using pydub
-        audio_segment = AudioSegment.from_file(audio_buffer, format="wav")
+        audio_segment = AudioSegment.from_file(audio_buffer, format="webm")
         converted_audio_buffer = BytesIO()
         audio_segment.export(converted_audio_buffer, format="wav")
         converted_audio_buffer.seek(0)
+        return converted_audio_buffer
     except pydub_exceptions.CouldntDecodeError as e:
-        # Log the error and the received audio data
         print(f"Decoding error: {str(e)}")
         print(f"Received audio data: {audio_data}")
-        return {"error": "Failed to decode audio"}
+        raise e
 
-    # Create a speech recognition object
+def recognize_speech(audio_data):
     recognizer = sr.Recognizer()
-
-    # Load the converted WAV data
-    with sr.AudioFile(converted_audio_buffer) as source:
-        # Read the audio data
+    with sr.AudioFile(audio_data) as source:
         audio = recognizer.record(source)
-
     try:
-        # Perform speech recognition
         text = recognizer.recognize_google(audio)
-        return {"text": text}
+        return text
     except sr.UnknownValueError:
-        return {"error": "Speech recognition could not understand the audio"}
+        raise sr.UnknownValueError("Speech recognition could not understand the audio")
     except sr.RequestError as e:
-        return {"error": f"Could not request results from the speech recognition service: {e}"}
+        raise sr.RequestError(f"Could not request results from the speech recognition service: {e}")
+
+@app.post("/speech-to-text")
+async def speech_to_text(audio: UploadFile = File(...)):
+    audio_data = await audio.read()
+    try:
+        converted_audio_data = convert_audio(audio_data)
+        text = recognize_speech(converted_audio_data)
+        return {"text": text}
+    except Exception as e:
+        return {"error": str(e)}

@@ -1,6 +1,8 @@
 <script lang="ts">
   import VoiceRecorder from "./lib/components/VoiceRecorder.svelte";
   import history from "./lib/assets/history.svg";
+
+  let userSpeech: string | null = null;
 </script>
 
 <main class="relative w-full h-screen font-primary">
@@ -14,7 +16,15 @@
     <h6 class="italic text-sm mt-2">
       Click on the microphone to start speaking
     </h6>
-    <VoiceRecorder />
+    <div class="recorder">
+      <VoiceRecorder bind:userSpeech />
+    </div>
+    {#if userSpeech}
+      <div class="userSpeech text-2xl mt-10">
+        <span class="text-[#050A30] italic mb-2">You said:</span>
+        <span class="">{userSpeech}</span>
+      </div>
+    {/if}
   </div>
 </main>
 
