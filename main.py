@@ -39,7 +39,7 @@ def speak_text(text):
 
 def send_to_chatgpt(text):
     client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
-    response = client.chat.completions.create(model="gpt-3.5-turbo",
+    response = client.chat.completions.create(model="gpt-4",
     messages=[
     {"role": "system", "content": "You are a helpful assistant designed to test a speech to text AI command app."},
     {"role": "user", "content": text}

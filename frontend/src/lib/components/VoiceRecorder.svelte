@@ -2,6 +2,7 @@
   import { onMount, createEventDispatcher } from "svelte";
   import mic from "../assets/mic.png";
   import stop from "../assets/stop.png";
+  import loading from "../assets/loading.svg";
 
   import { MediaRecorder, register } from "extendable-media-recorder";
   import { connect } from "extendable-media-recorder-wav-encoder";
@@ -78,7 +79,7 @@
 </script>
 
 <button
-  class="w-40 h-40 mt-60 bg-cover bg-no-repeat transition-all duration-300 ease-in-out rounded-full border border-[#ec7986] {isRecording
+  class="w-40 h-40 bg-cover bg-no-repeat transition-all duration-300 ease-in-out rounded-full border border-[#ec7986] {isRecording
     ? 'recording'
     : 'hover:scale-110'}"
   style="background-image: url({isRecording ? stop : mic})"

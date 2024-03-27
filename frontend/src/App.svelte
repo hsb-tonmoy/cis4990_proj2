@@ -45,17 +45,21 @@
 </script>
 
 <main class="relative w-full h-screen font-primary">
-  <div class="absolute top-10 right-5">
+  <div class="absolute bottom-10 xl:top-10 right-5">
     <button class="w-20"
       ><img src={history} alt="History" class="object-cover" /></button
     >
   </div>
-  <div class="container mx-auto flex flex-col items-center py-40 h-full">
-    <h1 class="text-6xl text-[#050A30]">Karen. The Voice Assistant</h1>
-    <h6 class="italic text-sm mt-2">
+  <div
+    class="container mx-auto flex flex-col items-center py-10 md:py-20 xl:py-40 h-full"
+  >
+    <h1 class="text-3xl md:text-5xl xl:text-6xl text-[#050A30] text-center">
+      Karen. The Voice Assistant
+    </h1>
+    <h6 class="italic text-xs md:text-sm mt-2">
       Click on the microphone to start speaking
     </h6>
-    <div class="recorder">
+    <div class="recorder mt-20 md:mt-40 xl:mt-60">
       <VoiceRecorder
         on:start={() => {
           userSpeech = null;
@@ -65,13 +69,13 @@
       />
     </div>
     {#if userSpeech}
-      <div class="userSpeech text-2xl mt-10">
+      <div class="userSpeech text-base md:text-xl xl:text-2xl mt-10">
         <span class="text-[#050A30] italic mb-2">You said: </span>
         <span class="">{userSpeech}</span>
       </div>
     {/if}
     {#if chatResponse}
-      <div class="userSpeech text-2xl mt-4">
+      <div class="userSpeech text-base md:text-xl xl:text-2xl mt-4">
         <span class="text-[#050A30] italic mb-2">ChatGPT said: </span>
         <span class="">{chatResponse}</span>
       </div>
