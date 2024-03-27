@@ -1,4 +1,5 @@
 from fastapi import FastAPI, File, UploadFile
+from pydantic import BaseModel
 from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 import speech_recognition as sr
@@ -65,17 +66,15 @@ async def text_to_speech(text: str):
         return StreamingResponse(audio_buffer, media_type="audio/mpeg")
     except Exception as e:
         return {"error": str(e)}
+    
+class TextModel(BaseModel):
+    text: str
 
 @app.post("/send-to-chatgpt")
-async def send_to_chatgpt_route(audio: UploadFile = File(...)):
+async def send_to_chatgpt_route(text: TextModel):
     try:
-        # Convert speech to text
-        audio_data = await audio.read()
-        audio_buffer = BytesIO(audio_data)
-        text = recognize_speech(audio_buffer)
-
         # Send text to ChatGPT and get response
-        response_text = send_to_chatgpt(text)
+        response_text = send_to_chatgpt(text.text)
 
         # Convert response text to speech
         audio_buffer = speak_text(response_text)
@@ -85,7 +84,6 @@ async def send_to_chatgpt_route(audio: UploadFile = File(...)):
             content=audio_buffer,
             media_type="audio/mpeg",
             headers={"Content-Disposition": f"attachment; filename=response.mp3",
-                     "user_input": text,
                      "chat_response": response_text}
         )
     except Exception as e:

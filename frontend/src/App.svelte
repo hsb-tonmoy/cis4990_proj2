@@ -13,7 +13,7 @@
     const formData = new FormData();
     formData.append("audio", audioBlob);
 
-    fetch("/send-to-chatgpt", {
+    fetch("/speech-to-text", {
       method: "POST",
       body: formData,
       headers: {
@@ -21,8 +21,28 @@
       },
     })
       .then(async (response) => {
+        const data = await response.json();
+        isLoading = false;
+        userSpeech = data.text;
+        sendTextToAPI(data.text);
+      })
+      .catch((error) => {
+        console.error("Error sending audio to API:", error);
+      });
+  }
+
+  async function sendTextToAPI(text: string) {
+    isLoading = true;
+    fetch("/send-to-chatgpt", {
+      method: "POST",
+      body: JSON.stringify({ text: text }),
+      headers: {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache",
+      },
+    })
+      .then(async (response) => {
         const contentType = response.headers.get("Content-Type");
-        const userInputHeader = response.headers.get("user_input");
         const chatResponseHeader = response.headers.get("chat_response");
 
         if (contentType?.includes("audio/mpeg")) {
@@ -34,9 +54,6 @@
           audio.play();
         }
 
-        if (userInputHeader) {
-          userSpeech = userInputHeader;
-        }
         if (chatResponseHeader) {
           chatResponse = chatResponseHeader;
         }
