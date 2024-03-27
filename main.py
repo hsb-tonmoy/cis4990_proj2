@@ -7,6 +7,8 @@ import gtts
 from openai import OpenAI
 from dotenv import load_dotenv
 import os
+import subprocess
+from flaskwebgui import FlaskUI
 
 load_dotenv()
  
@@ -90,3 +92,10 @@ async def send_to_chatgpt_route(audio: UploadFile = File(...)):
         return {"error": str(e)}
 
 
+if __name__ == "__main__":
+    try:
+        subprocess.check_call("cd frontend && npm run build", shell=True)
+    except subprocess.CalledProcessError as e:
+        print(f"Failed to build frontend: {e}")
+        exit(1)
+    FlaskUI(app=app, server="fastapi").run()

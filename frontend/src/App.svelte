@@ -55,7 +55,7 @@
     >
   </div>
   <div
-    class="container mx-auto flex flex-col items-center px-8 py-10 md:py-20 xl:py-40 h-full"
+    class="container mx-auto flex flex-col items-center px-8 py-10 md:py-20 xl:py-30 h-full"
   >
     <h1 class="text-3xl md:text-5xl xl:text-6xl text-[#050A30] text-center">
       Karen. The Voice Assistant

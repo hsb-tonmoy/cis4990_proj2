@@ -2,7 +2,6 @@
   import { onMount, createEventDispatcher } from "svelte";
   import mic from "../assets/mic.png";
   import stop from "../assets/stop.png";
-  import loading from "../assets/loading.svg";
 
   import { MediaRecorder, register } from "extendable-media-recorder";
   import { connect } from "extendable-media-recorder-wav-encoder";
@@ -96,8 +95,7 @@
   ></button>
 {:else}
   <button
-    class="w-40 h-40 bg-cover bg-no-repeat transition-all duration-300 ease-in-out rounded-full border-4 border-[#DF3A5C]"
-    style="background-image: url({loading})"
+    class="loading w-40 h-40 bg-cover bg-no-repeat transition-all duration-300 ease-in-out rounded-full border-4 border-[#DF3A5C]"
     disabled
   ></button>
 {/if}
@@ -118,5 +116,9 @@
     100% {
       box-shadow: 0 0 0 0 #ec7986;
     }
+  }
+
+  .loading {
+    background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><path fill="none" stroke="%23DF3A5C" stroke-dasharray="15" stroke-dashoffset="15" stroke-linecap="round" stroke-width="2" d="M12 3C16.9706 3 21 7.02944 21 12"><animate fill="freeze" attributeName="stroke-dashoffset" dur="0.3s" values="15;0"/><animateTransform attributeName="transform" dur="1.5s" repeatCount="indefinite" type="rotate" values="0 12 12;360 12 12"/></path></svg>');
   }
 </style>
