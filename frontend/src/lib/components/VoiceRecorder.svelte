@@ -1,8 +1,16 @@
 <script lang="ts">
+  import { onMount, createEventDispatcher } from "svelte";
   import mic from "../assets/mic.png";
   import stop from "../assets/stop.png";
 
-  export let userSpeech: string | null = null;
+  import { MediaRecorder, register } from "extendable-media-recorder";
+  import { connect } from "extendable-media-recorder-wav-encoder";
+
+  onMount(async () => {
+    await register(await connect());
+  });
+
+  const dispatch = createEventDispatcher();
 
   let stream: MediaStream | null = null;
   let mediaRecorder: any = null;
@@ -13,12 +21,12 @@
   const silenceDuration = 3000;
 
   async function startRecording() {
-    userSpeech = null;
     isRecording = true;
     chunks = [];
+    dispatch("start");
 
     stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    mediaRecorder = new MediaRecorder(stream, { mimeType: "audio/webm" });
+    mediaRecorder = new MediaRecorder(stream, { mimeType: "audio/wav" });
 
     mediaRecorder.addEventListener("dataavailable", (event: BlobEvent) => {
       chunks.push(event.data);
@@ -65,28 +73,7 @@
   async function stopRecording() {
     isRecording = false;
     mediaRecorder?.stop();
-    await sendAudioToAPI();
-  }
-
-  async function sendAudioToAPI() {
-    const audioBlob = new Blob(chunks, { type: "audio/webm" });
-    const formData = new FormData();
-    formData.append("audio", audioBlob);
-
-    fetch("/speech-to-text", {
-      method: "POST",
-      body: formData,
-      headers: {
-        "Cache-Control": "no-cache",
-      },
-    })
-      .then(async (response) => {
-        const data = await response.json();
-        userSpeech = data.text;
-      })
-      .catch((error) => {
-        console.error("Error sending audio to API:", error);
-      });
+    dispatch("stop", chunks);
   }
 </script>
 

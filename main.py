@@ -1,9 +1,14 @@
 from fastapi import FastAPI, File, UploadFile
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 import speech_recognition as sr
-from pydub import AudioSegment, exceptions as pydub_exceptions
 from io import BytesIO
+import gtts
+from openai import OpenAI
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
  
 app = FastAPI()
 
@@ -12,19 +17,6 @@ app.mount("/assets", StaticFiles(directory="public/assets"), name="static")
 @app.get("/", response_class=FileResponse)
 async def main():
     return "public/index.html"
-
-def convert_audio(audio_data):
-    audio_buffer = BytesIO(audio_data)
-    try:
-        audio_segment = AudioSegment.from_file(audio_buffer, format="webm")
-        converted_audio_buffer = BytesIO()
-        audio_segment.export(converted_audio_buffer, format="wav")
-        converted_audio_buffer.seek(0)
-        return converted_audio_buffer
-    except pydub_exceptions.CouldntDecodeError as e:
-        print(f"Decoding error: {str(e)}")
-        print(f"Received audio data: {audio_data}")
-        raise e
 
 def recognize_speech(audio_data):
     recognizer = sr.Recognizer()
@@ -38,12 +30,63 @@ def recognize_speech(audio_data):
     except sr.RequestError as e:
         raise sr.RequestError(f"Could not request results from the speech recognition service: {e}")
 
+def speak_text(text):
+    tts = gtts.gTTS(text)
+    audio_buffer = BytesIO()
+    tts.write_to_fp(audio_buffer)
+    audio_buffer.seek(0)
+    return audio_buffer
+
+def send_to_chatgpt(text):
+    client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
+    response = client.chat.completions.create(model="gpt-3.5-turbo",
+    messages=[
+    {"role": "system", "content": "You are a helpful assistant designed to test a speech to text AI command app."},
+    {"role": "user", "content": text}
+    ])
+    return response.choices[0].message.content
+
 @app.post("/speech-to-text")
 async def speech_to_text(audio: UploadFile = File(...)):
     audio_data = await audio.read()
+    audio_buffer = BytesIO(audio_data)
     try:
-        converted_audio_data = convert_audio(audio_data)
-        text = recognize_speech(converted_audio_data)
+        text = recognize_speech(audio_buffer)
         return {"text": text}
     except Exception as e:
         return {"error": str(e)}
+
+@app.post("/text-to-speech")
+async def text_to_speech(text: str):
+    try:
+        audio_buffer = speak_text(text)
+        return StreamingResponse(audio_buffer, media_type="audio/mpeg")
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.post("/send-to-chatgpt")
+async def send_to_chatgpt_route(audio: UploadFile = File(...)):
+    try:
+        # Convert speech to text
+        audio_data = await audio.read()
+        audio_buffer = BytesIO(audio_data)
+        text = recognize_speech(audio_buffer)
+
+        # Send text to ChatGPT and get response
+        response_text = send_to_chatgpt(text)
+
+        # Convert response text to speech
+        audio_buffer = speak_text(response_text)
+
+        # Return audio and text response
+        return StreamingResponse(
+            content=audio_buffer,
+            media_type="audio/mpeg",
+            headers={"Content-Disposition": f"attachment; filename=response.mp3",
+                     "user_input": text,
+                     "chat_response": response_text}
+        )
+    except Exception as e:
+        return {"error": str(e)}
+
+
