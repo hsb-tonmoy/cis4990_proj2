@@ -13,6 +13,8 @@
 
   const dispatch = createEventDispatcher();
 
+  export let isLoading: boolean = false;
+
   let stream: MediaStream | null = null;
   let mediaRecorder: any = null;
   let chunks: Blob[] = [];
@@ -78,19 +80,27 @@
   }
 </script>
 
-<button
-  class="w-40 h-40 bg-cover bg-no-repeat transition-all duration-300 ease-in-out rounded-full border border-[#ec7986] {isRecording
-    ? 'recording'
-    : 'hover:scale-110'}"
-  style="background-image: url({isRecording ? stop : mic})"
-  on:click={() => {
-    if (isRecording) {
-      stopRecording();
-    } else {
-      startRecording();
-    }
-  }}
-></button>
+{#if !isLoading}
+  <button
+    class="w-40 h-40 bg-cover bg-no-repeat transition-all duration-300 ease-in-out rounded-full border-4 border-[#DF3A5C] {isRecording
+      ? 'recording'
+      : 'hover:scale-110'}"
+    style="background-image: url({isRecording ? stop : mic})"
+    on:click={() => {
+      if (isRecording) {
+        stopRecording();
+      } else {
+        startRecording();
+      }
+    }}
+  ></button>
+{:else}
+  <button
+    class="w-40 h-40 bg-cover bg-no-repeat transition-all duration-300 ease-in-out rounded-full border-4 border-[#DF3A5C]"
+    style="background-image: url({loading})"
+    disabled
+  ></button>
+{/if}
 
 <style lang="postcss">
   .recording {

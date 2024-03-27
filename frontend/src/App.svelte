@@ -5,7 +5,10 @@
   let userSpeech: string | null = null;
   let chatResponse: string | null = null;
 
+  let isLoading: boolean = false;
+
   async function sendAudioToAPI(event: CustomEvent<Blob[]>) {
+    isLoading = true;
     const audioBlob = new Blob(event.detail, { type: "audio/wav" });
     const formData = new FormData();
     formData.append("audio", audioBlob);
@@ -37,6 +40,7 @@
         if (chatResponseHeader) {
           chatResponse = chatResponseHeader;
         }
+        isLoading = false;
       })
       .catch((error) => {
         console.error("Error sending audio to API:", error);
@@ -51,7 +55,7 @@
     >
   </div>
   <div
-    class="container mx-auto flex flex-col items-center py-10 md:py-20 xl:py-40 h-full"
+    class="container mx-auto flex flex-col items-center px-8 py-10 md:py-20 xl:py-40 h-full"
   >
     <h1 class="text-3xl md:text-5xl xl:text-6xl text-[#050A30] text-center">
       Karen. The Voice Assistant
@@ -61,6 +65,7 @@
     </h6>
     <div class="recorder mt-20 md:mt-40 xl:mt-60">
       <VoiceRecorder
+        bind:isLoading
         on:start={() => {
           userSpeech = null;
           chatResponse = null;
