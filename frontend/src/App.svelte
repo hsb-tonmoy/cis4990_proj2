@@ -7,6 +7,8 @@
 
   let isLoading: boolean = false;
 
+  let audio: HTMLAudioElement | null = null;
+
   async function sendAudioToAPI(event: CustomEvent<Blob[]>) {
     isLoading = true;
     const audioBlob = new Blob(event.detail, { type: "audio/wav" });
@@ -50,7 +52,7 @@
           const audioData = await audioResponse.arrayBuffer();
           const audioBlob = new Blob([audioData], { type: "audio/mpeg" });
           const audioUrl = URL.createObjectURL(audioBlob);
-          const audio = new Audio(audioUrl);
+          audio = new Audio(audioUrl);
           audio.play();
         }
 
@@ -84,6 +86,8 @@
       <VoiceRecorder
         bind:isLoading
         on:start={() => {
+          audio?.pause();
+          audio = null;
           userSpeech = null;
           chatResponse = null;
         }}
