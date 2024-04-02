@@ -2,14 +2,13 @@ from fastapi import FastAPI, File, UploadFile
 from pydantic import BaseModel
 from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
-import speech_recognition as sr
 from io import BytesIO
-import gtts
 from openai import OpenAI
 from dotenv import load_dotenv
 import os
 import subprocess
 from flaskwebgui import FlaskUI
+import tempfile
 
 load_dotenv()
  
@@ -17,31 +16,43 @@ app = FastAPI()
 
 app.mount("/assets", StaticFiles(directory="public/assets"), name="static")
 
+client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
+
 @app.get("/", response_class=FileResponse)
 async def main():
     return "public/index.html"
 
 def recognize_speech(audio_data):
-    recognizer = sr.Recognizer()
-    with sr.AudioFile(audio_data) as source:
-        audio = recognizer.record(source)
     try:
-        text = recognizer.recognize_google(audio)
-        return text
-    except sr.UnknownValueError:
-        raise sr.UnknownValueError("Speech recognition could not understand the audio")
-    except sr.RequestError as e:
-        raise sr.RequestError(f"Could not request results from the speech recognition service: {e}")
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as temp_file:
+            temp_file.write(audio_data.read())
+            temp_file.seek(0)
+            temp_file_path = temp_file.name
+        response = client.audio.transcriptions.create(
+            model="whisper-1",
+            file=open(temp_file_path, "rb"),
+        )
+
+        os.unlink(temp_file_path)
+
+    except Exception as e:
+        print(f"Exception occurred: {str(e)}")
+        return {"error": str(e)}
+    return response.text
 
 def speak_text(text):
-    tts = gtts.gTTS(text)
-    audio_buffer = BytesIO()
-    tts.write_to_fp(audio_buffer)
+    response = client.audio.speech.create(
+        model="tts-1",
+        voice="shimmer",
+        response_format="mp3",
+        input=text
+    )
+    audio_data = response.read()
+    audio_buffer = BytesIO(audio_data)
     audio_buffer.seek(0)
     return audio_buffer
 
 def send_to_chatgpt(text):
-    client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
     response = client.chat.completions.create(model="gpt-3.5-turbo",
     messages=[
     {"role": "system", "content": "You are a helpful assistant designed to test a speech to text AI command app."},
@@ -73,13 +84,10 @@ class TextModel(BaseModel):
 @app.post("/send-to-chatgpt")
 async def send_to_chatgpt_route(text: TextModel):
     try:
-        # Send text to ChatGPT and get response
         response_text = send_to_chatgpt(text.text)
 
-        # Convert response text to speech
         audio_buffer = speak_text(response_text)
 
-        # Return audio and text response
         return StreamingResponse(
             content=audio_buffer,
             media_type="audio/mpeg",
@@ -87,6 +95,7 @@ async def send_to_chatgpt_route(text: TextModel):
                      "chat_response": response_text}
         )
     except Exception as e:
+        print(f"Exception occurred: {str(e)}")
         return {"error": str(e)}
 
 

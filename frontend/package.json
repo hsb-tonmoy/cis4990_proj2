@@ -25,6 +25,6 @@
   "dependencies": {
     "extendable-media-recorder": "^9.1.12",
     "extendable-media-recorder-wav-encoder": "^7.0.107",
-    "wavesurfer.js": "^7.7.5"
+    "wavesurfer.js": "^7.7.7"
   }
 }

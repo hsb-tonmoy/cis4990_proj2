@@ -13,6 +13,7 @@
   const dispatch = createEventDispatcher();
 
   export let isLoading: boolean = false;
+  export let isPlaying: boolean = false;
 
   let stream: MediaStream | null = null;
   let mediaRecorder: any = null;
@@ -75,7 +76,12 @@
   async function stopRecording() {
     isRecording = false;
     mediaRecorder?.stop();
-    dispatch("stop", chunks);
+    dispatch("stopRecording", chunks);
+  }
+
+  async function stopPlayback() {
+    isPlaying = false;
+    dispatch("stopPlayback");
   }
 </script>
 
@@ -92,6 +98,12 @@
         startRecording();
       }
     }}
+  ></button>
+{:else if isPlaying}
+  <button
+    class="w-40 h-40 bg-cover bg-no-repeat transition-all duration-300 ease-in-out rounded-full border-4 border-[#DF3A5C]"
+    style="background-image: url({stop})"
+    on:click={stopPlayback}
   ></button>
 {:else}
   <button
