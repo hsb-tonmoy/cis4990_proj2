@@ -10,6 +10,8 @@
 
   let wavesurfer: WaveSurfer | null = null;
 
+  let errorOccurred: boolean = false;
+
   async function initializeWavesurfer() {
     if (!wavesurfer) {
       wavesurfer = WaveSurfer.create({
@@ -26,6 +28,7 @@
 
   async function sendAudioToAPI(event: CustomEvent<Blob[]>) {
     isLoading = true;
+    errorOccurred = false;
     const audioBlob = new Blob(event.detail, { type: "audio/wav" });
     const formData = new FormData();
     formData.append("audio", audioBlob);
@@ -45,6 +48,10 @@
       })
       .catch((error) => {
         console.error("Error sending audio to API:", error);
+        errorOccurred = true;
+      })
+      .finally(() => {
+        isLoading = false;
       });
   }
 
@@ -91,8 +98,6 @@
   $: {
     wavesurfer?.on("finish", () => {
       isPlaying = false;
-      wavesurfer?.destroy();
-      wavesurfer = null;
     });
   }
 
@@ -137,23 +142,30 @@
         on:stopPlayback={stopPlayBack}
       />
     </div>
-    {#if userSpeech}
-      <div
-        class="text-[#050A30] dark:text-[#f8f9fa] userSpeech text-base md:text-xl xl:text-2xl mt-10"
-      >
-        <span class="italic dark:font-semibold mb-2">You said: </span>
-        <span class="">{userSpeech}</span>
+    {#if !errorOccurred}
+      {#if userSpeech}
+        <div
+          class="text-[#050A30] dark:text-[#f8f9fa] userSpeech text-base md:text-xl xl:text-2xl mt-10"
+        >
+          <span class="italic dark:font-semibold mb-2">You said: </span>
+          <span class="">{userSpeech}</span>
+        </div>
+      {/if}
+      {#if chatResponse}
+        <div
+          class="text-[#050A30] dark:text-[#f8f9fa] karenSpeech text-base md:text-xl xl:text-2xl mt-4"
+        >
+          <span class="italic dark:font-semibold mb-2">Karen said: </span>
+          <span class="">{chatResponse}</span>
+        </div>
+      {/if}
+    {:else}
+      <div class="mt-10">
+        <span class="text-red-600 text-base md:text-xl xl:text-2xl mt-4">
+          An error occurred. Please try again.
+        </span>
       </div>
     {/if}
-    {#if chatResponse}
-      <div
-        class="text-[#050A30] dark:text-[#f8f9fa] karenSpeech text-base md:text-xl xl:text-2xl mt-4"
-      >
-        <span class="italic dark:font-semibold mb-2">Karen said: </span>
-        <span class="">{chatResponse}</span>
-      </div>
-    {/if}
-
     <div id="waveform" class="mt-4 w-96 h-48"></div>
   </div>
 </main>

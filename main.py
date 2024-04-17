@@ -1,6 +1,6 @@
-from fastapi import FastAPI, File, UploadFile
 from pydantic import BaseModel
-from fastapi.responses import FileResponse, StreamingResponse
+from fastapi import FastAPI, File, UploadFile, HTTPException
+from fastapi.responses import FileResponse, StreamingResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from io import BytesIO
 from openai import OpenAI
@@ -8,6 +8,8 @@ from dotenv import load_dotenv
 import os
 import subprocess
 from flaskwebgui import FlaskUI
+from starlette.status import HTTP_503_SERVICE_UNAVAILABLE
+import backoff
 import tempfile
 
 load_dotenv()
@@ -22,22 +24,29 @@ client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
 async def main():
     return "public/index.html"
 
+@backoff.on_exception(backoff.expo, Exception, max_tries=3)
+def safe_openai_call(callable, *args, **kwargs):
+    return callable(*args, **kwargs)
+
+
+@app.exception_handler(Exception)
+async def universal_exception_handler(request, exc):
+    return JSONResponse(
+        status_code=HTTP_503_SERVICE_UNAVAILABLE,
+        content={"message": "An error occurred, please try again later."},
+    )
+
 def recognize_speech(audio_data):
-    try:
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as temp_file:
-            temp_file.write(audio_data.read())
-            temp_file.seek(0)
-            temp_file_path = temp_file.name
-        response = client.audio.transcriptions.create(
-            model="whisper-1",
-            file=open(temp_file_path, "rb"),
-        )
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as temp_file:
+        temp_file.write(audio_data.read())
+        temp_file.seek(0)
+        temp_file_path = temp_file.name
+    response = client.audio.transcriptions.create(
+        model="whisper-1",
+        file=open(temp_file_path, "rb"),
+    )
 
-        os.unlink(temp_file_path)
-
-    except Exception as e:
-        print(f"Exception occurred: {str(e)}")
-        return {"error": str(e)}
+    os.unlink(temp_file_path)
     return response.text
 
 def speak_text(text):
@@ -62,13 +71,13 @@ def send_to_chatgpt(text):
 
 @app.post("/speech-to-text")
 async def speech_to_text(audio: UploadFile = File(...)):
-    audio_data = await audio.read()
-    audio_buffer = BytesIO(audio_data)
     try:
+        audio_data = await audio.read()
+        audio_buffer = BytesIO(audio_data)
         text = recognize_speech(audio_buffer)
         return {"text": text}
     except Exception as e:
-        return {"error": str(e)}
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/text-to-speech")
 async def text_to_speech(text: str):
@@ -76,7 +85,7 @@ async def text_to_speech(text: str):
         audio_buffer = speak_text(text)
         return StreamingResponse(audio_buffer, media_type="audio/mpeg")
     except Exception as e:
-        return {"error": str(e)}
+        raise HTTPException(status_code=500, detail=str(e))
     
 class TextModel(BaseModel):
     text: str
@@ -95,8 +104,7 @@ async def send_to_chatgpt_route(text: TextModel):
                      "chat_response": response_text}
         )
     except Exception as e:
-        print(f"Exception occurred: {str(e)}")
-        return {"error": str(e)}
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 if __name__ == "__main__":

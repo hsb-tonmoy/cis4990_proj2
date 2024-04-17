@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount, createEventDispatcher } from "svelte";
+  import { onMount, createEventDispatcher, onDestroy } from "svelte";
   import mic from "../assets/mic.png";
   import stop from "../assets/stop.png";
 
@@ -74,15 +74,30 @@
   }
 
   async function stopRecording() {
-    isRecording = false;
-    mediaRecorder?.stop();
-    dispatch("stopRecording", chunks);
+    if (isRecording && mediaRecorder) {
+      isRecording = false;
+      mediaRecorder.stop();
+      mediaRecorder = null;
+      dispatch("stopRecording", chunks);
+      if (stream) {
+        stream.getTracks().forEach((track) => track.stop());
+        stream = null;
+      }
+    }
   }
-
   async function stopPlayback() {
     isPlaying = false;
     dispatch("stopPlayback");
   }
+
+  onDestroy(() => {
+    if (mediaRecorder && isRecording) {
+      mediaRecorder.stop();
+    }
+    if (stream) {
+      stream.getTracks().forEach((track) => track.stop());
+    }
+  });
 </script>
 
 {#if !isLoading}
