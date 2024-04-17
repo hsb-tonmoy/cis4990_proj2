@@ -9,8 +9,9 @@
     easing: backIn,
   };
 
-  let voice = writable("female");
-  let expertise = writable("default");
+  export let voice = writable("female");
+  export let name: string = "Karen";
+  let expertise = writable("anything");
   let language = writable("en");
 
   function updateSettings() {
@@ -58,7 +59,7 @@
 >
   <div class="flex items-center justify-between">
     <h6 class="text-[#050A30] dark:text-[#f8f9fa] text-lg font-medium">
-      Supercharge Karen!
+      Supercharge {name}!
     </h6>
     <CloseButton
       on:click={() => (closed = true)}
@@ -88,8 +89,8 @@
         class="w-48 bg-white rounded-lg border border-gray-200 dark:bg-gray-800 dark:border-gray-600 divide-y divide-gray-200 dark:divide-gray-600"
       >
         <li>
-          <Radio class="p-3" bind:group={$expertise} value="default"
-            >Default</Radio
+          <Radio class="p-3" bind:group={$expertise} value="anything"
+            >General</Radio
           >
         </li>
         <li>

@@ -25,7 +25,7 @@ async def main():
 
 voices = {
     'female': "shimmer",
-    'male': "alloy",
+    'male': "onyx",
 }
 
 class SettingsModel(BaseModel):
@@ -84,7 +84,9 @@ async def speech_to_text(audio: UploadFile = File(...)):
         text = recognize_speech(audio_buffer)
         return {"text": text}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        print(f"Error in speech_to_text: {str(e)}")
+        return {"error": "An error occurred during speech recognition. Please try again."}
+
 
 @app.post("/text-to-speech")
 async def text_to_speech(text: str):
@@ -111,7 +113,8 @@ async def send_to_chatgpt_route(text: TextModel):
                      "chat_response": response_text}
         )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        print(f"Error in send_to_chatgpt: {str(e)}")
+        return {"error": "An error occurred while processing the request. Please try again."}
 
 
 if __name__ == "__main__":

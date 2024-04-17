@@ -1,5 +1,10 @@
 <script lang="ts">
+  import type { Writable } from "svelte/store";
+  import { slide } from "svelte/transition";
+  import { quintOut } from "svelte/easing";
   import WaveSurfer from "wavesurfer.js";
+  import { Toast } from "flowbite-svelte";
+  import { CloseCircleSolid } from "flowbite-svelte-icons";
   import Settings from "./lib/components/Settings.svelte";
   import VoiceRecorder from "./lib/components/VoiceRecorder.svelte";
 
@@ -12,6 +17,16 @@
   let wavesurfer: WaveSurfer | null = null;
 
   let errorOccurred: boolean = false;
+
+  let voice: Writable<string>;
+
+  let name: string = "Karen";
+
+  $: if ($voice === "male") {
+    name = "Darren";
+  } else {
+    name = "Karen";
+  }
 
   async function initializeWavesurfer() {
     if (!wavesurfer) {
@@ -49,10 +64,7 @@
       })
       .catch((error) => {
         console.error("Error sending audio to API:", error);
-        errorOccurred = true;
-      })
-      .finally(() => {
-        isLoading = false;
+        triggerToast();
       });
   }
 
@@ -87,6 +99,10 @@
       })
       .catch((error) => {
         console.error("Error sending audio to API:", error);
+        triggerToast();
+      })
+      .finally(() => {
+        isLoading = false;
       });
   }
 
@@ -110,17 +126,48 @@
     userSpeech = null;
     chatResponse = null;
   }
+
+  let counter = 10;
+
+  function triggerToast() {
+    errorOccurred = true;
+    counter = 10;
+    timeout();
+  }
+
+  function timeout() {
+    if (--counter > 0) return setTimeout(timeout, 1000);
+    errorOccurred = false;
+  }
 </script>
 
+<svelte:head>
+  <title>{name} - The Voice Assistant</title>
+</svelte:head>
+
 <main class="main-bg dark:main-bg-dark relative w-full h-screen font-primary">
-  <Settings />
+  <Toast
+    position="bottom-right"
+    color="red"
+    bind:open={errorOccurred}
+    transition={slide}
+    params={{ delay: 250, duration: 300, easing: quintOut }}
+  >
+    <svelte:fragment slot="icon">
+      <CloseCircleSolid class="w-5 h-5" />
+      <span class="sr-only">Error icon</span>
+    </svelte:fragment>
+    Please try again
+  </Toast>
+
+  <Settings bind:voice bind:name />
   <div
     class="container mx-auto flex flex-col items-center px-8 py-10 md:py-20 xl:py-30 h-full"
   >
     <h1
       class="text-3xl md:text-5xl xl:text-6xl text-[#050A30] dark:text-[#f8f9fa] text-center"
     >
-      Karen. The Voice Assistant
+      {name}. The Voice Assistant
     </h1>
     <h6 class="italic text-xs md:text-sm mt-2 dark:text-[#e9ecef]">
       Click on the microphone to start speaking
@@ -147,7 +194,7 @@
         <div
           class="text-[#050A30] dark:text-[#f8f9fa] karenSpeech text-base md:text-xl xl:text-2xl mt-4"
         >
-          <span class="italic dark:font-semibold mb-2">Karen said: </span>
+          <span class="italic dark:font-semibold mb-2">{name} said: </span>
           <span class="">{chatResponse}</span>
         </div>
       {/if}
