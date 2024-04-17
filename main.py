@@ -36,6 +36,24 @@ async def universal_exception_handler(request, exc):
         content={"message": "An error occurred, please try again later."},
     )
 
+voices = {
+    'female': "shimmer",
+    'male': "alloy",
+}
+
+class SettingsModel(BaseModel):
+    voice: str
+    expertise: str
+    language: str
+
+settings = SettingsModel(voice='female', expertise='default', language='en')
+
+@app.post("/update-settings")
+async def update_settings(new_settings: SettingsModel):
+    global settings
+    settings = new_settings
+    print(f"Updated settings: {settings}")
+
 def recognize_speech(audio_data):
     with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as temp_file:
         temp_file.write(audio_data.read())
@@ -44,6 +62,7 @@ def recognize_speech(audio_data):
     response = client.audio.transcriptions.create(
         model="whisper-1",
         file=open(temp_file_path, "rb"),
+        language=settings.language
     )
 
     os.unlink(temp_file_path)
@@ -52,9 +71,9 @@ def recognize_speech(audio_data):
 def speak_text(text):
     response = client.audio.speech.create(
         model="tts-1",
-        voice="shimmer",
+        voice=voices[settings.voice],
         response_format="mp3",
-        input=text
+        input=text,
     )
     audio_data = response.read()
     audio_buffer = BytesIO(audio_data)
@@ -62,9 +81,10 @@ def speak_text(text):
     return audio_buffer
 
 def send_to_chatgpt(text):
+    prompt = f"You are a helpful assistant with expertise in {settings.expertise}."
     response = client.chat.completions.create(model="gpt-3.5-turbo",
     messages=[
-    {"role": "system", "content": "You are a helpful assistant designed to test a speech to text AI command app."},
+    {"role": "system", "content": prompt},
     {"role": "user", "content": text}
     ])
     return response.choices[0].message.content
