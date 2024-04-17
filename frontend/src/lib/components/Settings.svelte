@@ -68,7 +68,7 @@
   <div class="px-4">
     <form action="" class="mt-4">
       <p class="mb-4 font-semibold text-gray-900 dark:text-white">
-        Choose Voice
+        Switch Voice
       </p>
       <ul
         class="items-center w-full rounded-lg border border-gray-200 sm:flex dark:bg-gray-800 dark:border-gray-600 divide-x rtl:divide-x-reverse divide-gray-200 dark:divide-gray-600"
@@ -122,7 +122,7 @@
         </li>
       </ul>
       <p class="mt-6 mb-4 font-semibold text-[#050A30] dark:text-[#f8f9fa]">
-        Choose Language
+        Change/Translate Language
       </p>
       <ul
         class="w-48 bg-white rounded-lg border border-gray-200 dark:bg-gray-800 dark:border-gray-600 divide-y divide-gray-200 dark:divide-gray-600"

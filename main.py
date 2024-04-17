@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from fastapi import FastAPI, File, UploadFile, HTTPException
-from fastapi.responses import FileResponse, StreamingResponse, JSONResponse
+from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from io import BytesIO
 from openai import OpenAI
@@ -8,8 +8,6 @@ from dotenv import load_dotenv
 import os
 import subprocess
 from flaskwebgui import FlaskUI
-from starlette.status import HTTP_503_SERVICE_UNAVAILABLE
-import backoff
 import tempfile
 
 load_dotenv()
@@ -24,17 +22,6 @@ client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
 async def main():
     return "public/index.html"
 
-@backoff.on_exception(backoff.expo, Exception, max_tries=3)
-def safe_openai_call(callable, *args, **kwargs):
-    return callable(*args, **kwargs)
-
-
-@app.exception_handler(Exception)
-async def universal_exception_handler(request, exc):
-    return JSONResponse(
-        status_code=HTTP_503_SERVICE_UNAVAILABLE,
-        content={"message": "An error occurred, please try again later."},
-    )
 
 voices = {
     'female': "shimmer",
